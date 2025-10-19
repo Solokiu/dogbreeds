@@ -1,0 +1,44 @@
+name: Install dependencies
+
+on:
+  push:
+    paths:
+      - '**.py'
+      - requirements.txt
+      - .github/workflows/python-app.yml
+  pull_request:
+    paths:
+      - '**.py'
+      - requirements.txt
+      - .github/workflows/python-app.yml
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Flask app (for demonstration)
+      env:
+        FLASK_APP: app.py
+        FLASK_ENV: development
+      run: |
+        # Start Flask app in the background
+        nohup flask run --host=0.0.0.0 --port=5000 &
+        sleep 10
+        # Example: Submit an image using curl (replace test.jpg with your test image)
+        # curl -F "image=@test.jpg" http://127.0.0.1:5000/
+        # Kill Flask after test
+        pkill -f flask

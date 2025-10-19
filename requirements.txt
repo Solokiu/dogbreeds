@@ -1,0 +1,11 @@
+joblib
+numpy==1.26.4
+pandas
+matplotlib
+tensorflow
+scikit-learn==1.2.2
+seaborn
+xgboost
+dill
+flask
+flask-cors
