@@ -1,11 +1,8 @@
-joblib
+joblib==1.5.2
 numpy==1.26.4
-pandas
-matplotlib
-tensorflow
+pandas==2.2.3
+tensorflow==2.18.0
 scikit-learn==1.2.2
-seaborn
-xgboost
+xgboost==2.0.3
 dill
-flask
-flask-cors
+Streamlit
