@@ -29,8 +29,8 @@ except ImportError:
 MODEL_PATHS = {
     "Xception": "model/final_xception_classifier.h5",
     "FeatureExtractor": "model/feature_extractor_only.h5",
-    "XGBoost": "model/xgboost_model.joblib", # Giả định tên file là .joblib
-    "RandomForest": "model/rf_model.joblib"  # Giả định tên file là .joblib
+    "XGBoost": "model/xgb_model_top10.joblib", # Giả định tên file là .joblib
+    "RandomForest": "model/rf_model_top10.joblib"  # Giả định tên file là .joblib
 }
 
 # Danh sách 10 giống chó đã được huấn luyện (Đã xác nhận từ bạn)
