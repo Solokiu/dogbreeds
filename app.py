@@ -205,21 +205,17 @@ def simulate_zeroshot_prediction(feature_vector, unseen_breeds, top_k=5):
 
 def app():
     st.set_page_config(
-        # CHỈNH SỬA: Tiêu đề
         page_title="Dự Đoán Giống Chó (CNN, XGB, RF)", 
         layout="wide"
     )
     
-    # CHỈNH SỬA: Tiêu đề
     st.title("🐶 Ứng Dụng Dự Đoán Giống Chó (Xception, XGBoost, Random Forest)")
     st.markdown("Sử dụng 3 mô hình (CNN, XGB, RF) cho 10 giống chó và Zero-Shot Learning (ZSL).")
     
-    # Tải danh sách 10 giống chó (danh sách cứng)
     ALL_BREEDS = get_supervised_breeds()
     if ALL_BREEDS is None:
         return 
     
-    # --- KHỐI KIỂM TRA NHÃN ---
     if len(ALL_BREEDS) >= 3:
         st.sidebar.markdown("**Kiểm tra Nhãn (Top 3)**")
         st.sidebar.markdown(f"Index 0: **{ALL_BREEDS[0]}**")
@@ -227,20 +223,17 @@ def app():
         st.sidebar.markdown(f"Index 2: **{ALL_BREEDS[2]}**")
         st.sidebar.markdown("---")
         
-    # Tải mô hình chỉ một lần
     loaded_models = load_models()
     
     if loaded_models is None:
         st.error("Một số mô hình quan trọng không thể tải. Vui lòng kiểm tra log.")
         return 
     
-    # CHỈNH SỬA: Lấy tất cả các mô hình
     model_xception = loaded_models.get("Model Xception")
-    model_extractor = loaded_models.get("FeatureExtractor") # Mới
-    model_xgb = loaded_models.get("XGBoost")               # Mới
-    model_rf = loaded_models.get("RandomForest")           # Mới
+    model_extractor = loaded_models.get("FeatureExtractor")
+    model_xgb = loaded_models.get("XGBoost")
+    model_rf = loaded_models.get("RandomForest")
     
-    # Bộ tải ảnh lên
     uploaded_file = st.file_uploader(
         "**1. Chọn một hình ảnh chó từ thư viện của bạn**", 
         type=["jpg", "jpeg", "png"]
@@ -248,36 +241,51 @@ def app():
 
     if uploaded_file is not None:
         try:
-            # Đọc và hiển thị ảnh
             image = Image.open(uploaded_file).convert("RGB")
             st.image(image, caption='Hình ảnh đã tải lên', use_column_width=True)
-            
             st.markdown("---")
             
             with st.spinner('Đang tiền xử lý, trích xuất đặc trưng và chạy dự đoán...'):
                 
-                # Tiền xử lý ảnh (chỉ chạy 1 lần)
-                # CHỈNH SỬA: Đổi tên biến
                 preprocessed_image = preprocess_image(image, target_size=TARGET_SIZE)
                 
-                # THÊM MỚI: Trích xuất đặc trưng (chỉ chạy 1 lần)
-                feature_vector = None
+                # CHỈNH SỬA CHÍNH NẰM Ở ĐÂY
+                cnn_output_features = None
+                flattened_features = None # Biến mới để chứa đặc trưng 2D
+
                 if model_extractor:
-                    feature_vector = model_extractor.predict(preprocessed_image)
-                    st.success("Trích xuất đặc trưng thành công.")
+                    # 1. Trích xuất đặc trưng (sẽ ra 4D hoặc 2D)
+                    # Giả sử nó trả về (1, 7, 7, 2048)
+                    cnn_output_features = model_extractor.predict(preprocessed_image)
+                    
+                    # 2. KIỂM TRA VÀ LÀM PHẲNG (FLATTEN)
+                    if cnn_output_features.ndim > 2:
+                        # Nếu đầu ra là 4D (ví dụ: 1, 7, 7, 2048) -> làm phẳng nó
+                        n_features = np.prod(cnn_output_features.shape[1:]) # Nhân 7*7*2048
+                        flattened_features = cnn_output_features.reshape((1, n_features))
+                    else:
+                        # Nếu đầu ra đã là 2D (ví dụ: 1, 2048) -> dùng luôn
+                        flattened_features = cnn_output_features
+                    
+                    st.success(f"Trích xuất đặc trưng thành công. Shape đầu vào cho XGB/RF: {flattened_features.shape}")
+                    
+                    # Thêm kiểm tra shape
+                    if flattened_features.shape[1] != 100352:
+                         st.warning(f"Cảnh báo: Shape đặc trưng là {flattened_features.shape[1]}, nhưng lỗi của bạn báo mong đợi 100352. Hãy đảm bảo mô hình trích xuất đặc trưng là chính xác.")
+
                 else:
                     st.warning("Thiếu mô hình Trích xuất Đặc trưng, không thể chạy XGBoost/RF.")
+                
                 
                 # 2. Chạy dự đoán Xception (Top 3)
                 st.subheader("2. Kết Quả Từ Mô Hình Xception CNN (Top 3)")
                 if model_xception:
                     predictions = run_prediction(
                         model_xception, 
-                        preprocessed_image, # Đã đổi tên
+                        preprocessed_image, 
                         top_k=3, 
                         all_breeds_list=ALL_BREEDS
                     )
-                    
                     df = pd.DataFrame(predictions, columns=['Giống Chó', 'Xác Suất'])
                     df['Xác Suất'] = (df['Xác Suất'] * 100).map('{:.2f}%'.format)
                     st.dataframe(df, use_container_width=True, hide_index=True)
@@ -285,54 +293,55 @@ def app():
                     st.warning("Mô hình Xception chưa được tải.")
                 
                 
-                # 3. THÊM MỚI: Chạy dự đoán XGBoost (Top 3)
+                # 3. Chạy dự đoán XGBoost (Top 3)
                 st.markdown("---")
                 st.subheader("3. Kết Quả Từ Mô Hình XGBoost (Top 3)")
                 
-                if model_xgb and feature_vector is not None:
+                # CHỈNH SỬA: Dùng 'flattened_features'
+                if model_xgb and flattened_features is not None:
                     xgb_predictions = run_tree_prediction(
                         model_xgb,
-                        feature_vector,
+                        flattened_features, # Sử dụng đặc trưng đã làm phẳng
                         top_k=3,
                         all_breeds_list=ALL_BREEDS
                     )
                     df_xgb = pd.DataFrame(xgb_predictions, columns=['Giống Chó', 'Xác Suất'])
                     df_xgb['Xác Suất'] = (df_xgb['Xác Suất'] * 100).map('{:.2f}%'.format)
                     st.dataframe(df_xgb, use_container_width=True, hide_index=True)
-                elif feature_vector is None:
+                elif flattened_features is None:
                     st.info("Cần có Trình trích xuất đặc trưng để chạy XGBoost.")
                 else:
                     st.warning("Mô hình XGBoost chưa được tải.")
 
 
-                # 4. THÊM MỚI: Chạy dự đoán Random Forest (Top 3)
+                # 4. Chạy dự đoán Random Forest (Top 3)
                 st.markdown("---")
                 st.subheader("4. Kết Quả Từ Mô Hình Random Forest (Top 3)")
                 
-                if model_rf and feature_vector is not None:
+                # CHỈNH SỬA: Dùng 'flattened_features'
+                if model_rf and flattened_features is not None:
                     rf_predictions = run_tree_prediction(
                         model_rf,
-                        feature_vector,
+                        flattened_features, # Sử dụng đặc trưng đã làm phẳng
                         top_k=3,
                         all_breeds_list=ALL_BREEDS
                     )
                     df_rf = pd.DataFrame(rf_predictions, columns=['Giống Chó', 'Xác Suất'])
                     df_rf['Xác Suất'] = (df_rf['Xác Suất'] * 100).map('{:.2f}%'.format)
                     st.dataframe(df_rf, use_container_width=True, hide_index=True)
-                elif feature_vector is None:
+                elif flattened_features is None:
                     st.info("Cần có Trình trích xuất đặc trưng để chạy Random Forest.")
                 else:
                     st.warning("Mô hình Random Forest chưa được tải.")
 
                                     
                 # 5. Chạy dự đoán Zero-Shot Learning (Top 5)
-                # CHỈNH SỬA: Đổi số thứ tự
                 st.markdown("---")
                 st.subheader("5. Dự Đoán Zero-Shot Learning (Top 5 Giống Chưa Từng Thấy)")
                 st.caption("Dự đoán giả lập dựa trên độ tương đồng ngữ cảnh/đặc trưng.")
                 
-                # CHỈNH SỬA: Truyền feature_vector
-                zeroshot_results = simulate_zeroshot_prediction(feature_vector, UNSEEN_BREEDS, top_k=5)
+                # CHỈNH SỬA: Truyền 'flattened_features' (dù hàm giả lập không dùng nhưng để nhất quán)
+                zeroshot_results = simulate_zeroshot_prediction(flattened_features, UNSEEN_BREEDS, top_k=5)
                 
                 df_zsl = pd.DataFrame(zeroshot_results, columns=['Giống Chó (UNSEEN)', 'Độ Tương Đồng'])
                 df_zsl['Độ Tương Đồng'] = (df_zsl['Độ Tương Đồng'] * 100).map('{:.2f}%'.format)
