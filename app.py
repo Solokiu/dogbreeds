@@ -53,7 +53,7 @@ TARGET_SIZE = (224, 224)
 # --- HÀM TẢI NHÃN (Giữ nguyên) ---
 def get_supervised_breeds():
     """Trả về danh sách 10 giống chó đã được huấn luyện."""
-    st.success("Tải thành công 10 giống chó đã được huấn luyện.")
+   # st.success("Tải thành công 10 giống chó đã được huấn luyện.")
     return SUPERVISED_BREEDS
 
 # --- Tiền Xử Lý Ảnh (Giữ nguyên) ---
@@ -96,7 +96,7 @@ def load_models():
             st.error(f"LỖI KHỚP LỚP: Mô hình Xception .h5 có {output_dim} đầu ra, nhưng bạn đã huấn luyện 10 giống chó.")
         else:
             loaded_models["Model Xception"] = model_xception
-            st.success(f"Tải thành công: Xception (Keras/TensorFlow)")
+            st.success(f"Tải thành công: Xception")
     except Exception as e:
         st.error(f"LỖI tải Xception: {e}")
         
@@ -104,7 +104,7 @@ def load_models():
     try:
         model_extractor = load_model(MODEL_PATHS["FeatureExtractor"])
         loaded_models["FeatureExtractor"] = model_extractor
-        st.success(f"Tải thành công: Trình trích xuất đặc trưng (Keras/TensorFlow)")
+        #st.success(f"Tải thành công: Trình trích xuất đặc trưng (Keras/TensorFlow)")
     except Exception as e:
         st.error(f"LỖI tải FeatureExtractor: {e}. Đảm bảo file '{MODEL_PATHS['FeatureExtractor']}' tồn tại.")
 
@@ -112,7 +112,7 @@ def load_models():
     try:
         model_xgb = joblib.load(MODEL_PATHS["XGBoost"])
         loaded_models["XGBoost"] = model_xgb
-        st.success(f"Tải thành công: XGBoost (Joblib)")
+        st.success(f"Tải thành công: XGBoost ")
     except Exception as e:
         st.error(f"LỖI tải XGBoost: {e}. Bạn đã tạo file '{MODEL_PATHS['XGBoost']}' chưa?")
 
@@ -120,7 +120,7 @@ def load_models():
     try:
         model_rf = joblib.load(MODEL_PATHS["RandomForest"])
         loaded_models["RandomForest"] = model_rf
-        st.success(f"Tải thành công: Random Forest (Joblib)")
+        st.success(f"Tải thành công: Random Forest ")
     except Exception as e:
         st.error(f"LỖI tải Random Forest: {e}. Bạn đã tạo file '{MODEL_PATHS['RandomForest']}' chưa?")
         
@@ -209,8 +209,8 @@ def app():
         layout="wide"
     )
     
-    st.title("🐶 Ứng Dụng Dự Đoán Giống Chó (Xception, XGBoost, Random Forest)")
-    st.markdown("Sử dụng 3 mô hình (CNN, XGB, RF) cho 10 giống chó và Zero-Shot Learning (ZSL).")
+    st.title(" Ứng Dụng Dự Đoán Giống Chó ")
+    st.markdown("Sử dụng 3 mô hình CNN, XGB, RF cho 10 giống chó và Zero-Shot Learning .")
     
     ALL_BREEDS = get_supervised_breeds()
     if ALL_BREEDS is None:
@@ -278,7 +278,7 @@ def app():
                 
                 
                 # 2. Chạy dự đoán Xception (Top 3)
-                st.subheader("2. Kết Quả Từ Mô Hình Xception CNN (Top 3)")
+                st.subheader("2. Kết Quả Từ Mô Hình Xception CNN ")
                 if model_xception:
                     predictions = run_prediction(
                         model_xception, 
@@ -295,7 +295,7 @@ def app():
                 
                 # 3. Chạy dự đoán XGBoost (Top 3)
                 st.markdown("---")
-                st.subheader("3. Kết Quả Từ Mô Hình XGBoost (Top 3)")
+                st.subheader("3. Kết Quả Từ Mô Hình XGBoost ")
                 
                 # CHỈNH SỬA: Dùng 'flattened_features'
                 if model_xgb and flattened_features is not None:
@@ -316,7 +316,7 @@ def app():
 
                 # 4. Chạy dự đoán Random Forest (Top 3)
                 st.markdown("---")
-                st.subheader("4. Kết Quả Từ Mô Hình Random Forest (Top 3)")
+                st.subheader("4. Kết Quả Từ Mô Hình Random Forest ")
                 
                 # CHỈNH SỬA: Dùng 'flattened_features'
                 if model_rf and flattened_features is not None:
@@ -337,8 +337,8 @@ def app():
                                     
                 # 5. Chạy dự đoán Zero-Shot Learning (Top 5)
                 st.markdown("---")
-                st.subheader("5. Dự Đoán Zero-Shot Learning (Top 5 Giống Chưa Từng Thấy)")
-                st.caption("Dự đoán giả lập dựa trên độ tương đồng ngữ cảnh/đặc trưng.")
+                st.subheader("5. Dự Đoán Zero-Shot Learning")
+                #st.caption("Dự đoán giả lập dựa trên độ tương đồng ngữ cảnh/đặc trưng.")
                 
                 # CHỈNH SỬA: Truyền 'flattened_features' (dù hàm giả lập không dùng nhưng để nhất quán)
                 zeroshot_results = simulate_zeroshot_prediction(flattened_features, UNSEEN_BREEDS, top_k=5)
